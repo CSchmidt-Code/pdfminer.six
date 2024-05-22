@@ -158,6 +158,19 @@ class LTComponent(LTItem):
 
     def __ge__(self, _: object) -> bool:
         raise ValueError
+    
+    def update_bbox(self) -> None:
+        x_min, x_max, y_min, y_max = None, None, None, None
+        for obj in self._objs:
+            if hasattr(obj, 'x0') and (not x_min or obj.x0 < x_min):
+                x_min = obj.x0
+            if hasattr(obj, 'x1') and (not x_max or obj.x1 > x_max):
+                x_max = obj.x1
+            if hasattr(obj, 'y0') and (not y_min or obj.y0 < y_min):
+                y_min = obj.y0
+            if hasattr(obj, 'y1') and (not y_max or obj.y1 > y_max):
+                y_max = obj.y1
+        self.set_bbox((x_min, y_min, x_max, y_max))
 
     def set_bbox(self, bbox: Rect) -> None:
         (x0, y0, x1, y1) = bbox
@@ -431,6 +444,7 @@ class LTContainer(LTComponent, Generic[LTItemT]):
 
     def __init__(self, bbox: Rect) -> None:
         LTComponent.__init__(self, bbox)
+        self.labels: Dict[str, any] = {}
         self._objs: List[LTItemT] = []
         return
 
@@ -444,6 +458,9 @@ class LTContainer(LTComponent, Generic[LTItemT]):
         self._objs.append(obj)
         return
 
+    def remove(self, obj: LTItemT) -> None:
+        self._objs.remove(obj)
+
     def extend(self, objs: Iterable[LTItemT]) -> None:
         for obj in objs:
             self.add(obj)
@@ -453,6 +470,15 @@ class LTContainer(LTComponent, Generic[LTItemT]):
         for obj in self._objs:
             obj.analyze(laparams)
         return
+    
+    def label(self, name: str, value: any) -> None:
+        self.labels[name] = value
+    
+    def unlabel(self, name: str) -> any:
+        return self.labels.pop(name, None)
+    
+    def get_label(self, name: str, default: any = None) -> any:
+        return self.labels.get(name, default)
 
 
 class LTExpandableContainer(LTContainer[LTItemT]):
